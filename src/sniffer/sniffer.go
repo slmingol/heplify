@@ -23,11 +23,13 @@ import (
 	"github.com/sipcapture/heplify/src/transport"
 )
 
-// Sender is the minimal interface the sniffer needs to forward HEP packets.
+// Sender is the minimal interface the sniffer needs to forward packets.
 type Sender interface {
 	SendNoErr(data []byte)
 	SendRecord(r transport.PacketRecord)
+	SendERSPAN(pkt transport.ERSPANPacket)
 	HasFlightClients() bool
+	HasERSPANClients() bool
 }
 
 // PacketSource interface for different capture methods
@@ -907,6 +909,19 @@ func (s *Sniffer) sendHEPWithMOS(pkt *decoder.Packet, protoType byte, mos uint16
 			NodeID:      s.cfg.SystemSettings.NodeID,
 			NodeName:    s.cfg.SystemSettings.NodeName,
 			MOS:         mos,
+		})
+		s.stats.Inc(StatHEPSent)
+		return
+	}
+
+	// ERSPAN path: wrap raw SIP payload in GRE/ERSPAN with original src/dst IP metadata.
+	if sender.HasERSPANClients() {
+		sender.SendERSPAN(transport.ERSPANPacket{
+			SrcIP:   pkt.SrcIP.String(),
+			DstIP:   pkt.DstIP.String(),
+			SrcPort: pkt.SrcPort,
+			DstPort: pkt.DstPort,
+			Payload: pkt.Payload,
 		})
 		s.stats.Inc(StatHEPSent)
 		return

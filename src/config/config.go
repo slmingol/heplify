@@ -170,6 +170,13 @@ type TransportSettings struct {
 	StreamName      string `json:"stream_name"       mapstructure:"stream_name"`
 	BatchSize       int    `json:"batch_size"        mapstructure:"batch_size"`
 	FlushIntervalMs int    `json:"flush_interval_ms" mapstructure:"flush_interval_ms"`
+	// ERSPAN fields (used when transport = "erspan"; Host is the dst IP for the outer GRE envelope)
+	// ERSPANSrcIP: source IP for the outer GRE envelope; empty = kernel picks.
+	// ERSPANVersion: 1 (Type I / raw GRE), 2 (ERSPAN Type II, default), 3 (ERSPAN Type III).
+	// ERSPANSessionID: 0–1023, default 1.
+	ERSPANSrcIP     string `json:"erspan_src_ip"     mapstructure:"erspan_src_ip"`
+	ERSPANVersion   int    `json:"erspan_version"    mapstructure:"erspan_version"`
+	ERSPANSessionID int    `json:"erspan_session_id" mapstructure:"erspan_session_id"`
 }
 
 type ProtocolSettings struct {
@@ -211,6 +218,18 @@ func (c *Config) Validate() error {
 			}
 			switch strings.ToLower(t.Transport) {
 			case "udp", "tcp", "tls", "grpc-flight", "":
+				// port validation already done above
+			case "erspan":
+				// ERSPAN uses Host as dst IP; port is unused but not an error if set.
+				v := t.ERSPANVersion
+				if v != 0 && (v < 1 || v > 3) {
+					return fmt.Errorf("transport[%d] erspan_version must be 1, 2, or 3, got %d", i, v)
+				}
+				if t.ERSPANSessionID < 0 || t.ERSPANSessionID > 1023 {
+					return fmt.Errorf("transport[%d] erspan_session_id must be 0–1023, got %d", i, t.ERSPANSessionID)
+				}
+				// Skip port range check — ERSPAN is raw socket, no port needed.
+				continue
 			default:
 				return fmt.Errorf("transport[%d] has unsupported transport: %s", i, t.Transport)
 			}
