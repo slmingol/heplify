@@ -9,6 +9,7 @@ on:
       - "feat/**"
       - "fix/**"
       - "ci/**"
+      - "test/**"
 
 permissions:
   contents: read
