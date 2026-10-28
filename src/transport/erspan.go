@@ -107,7 +107,7 @@ func (c *ERSPANClient) Send(pkt ERSPANPacket) error {
 	}
 
 	buf := make([]byte, 0, 20+4+12+14+20+8+len(pkt.Payload))
-	buf = c.appendOuterIP(buf, pkt)
+	buf = c.appendOuterIP(buf)
 	buf = c.appendGRE(buf)
 	buf = c.appendERSPANHdr(buf)
 	buf = appendInnerEth(buf)
@@ -130,7 +130,7 @@ func (c *ERSPANClient) Close() {
 }
 
 // appendOuterIP writes a zero-checksum outer IPv4 header (checksum filled by fixOuterIP).
-func (c *ERSPANClient) appendOuterIP(buf []byte, pkt ERSPANPacket) []byte {
+func (c *ERSPANClient) appendOuterIP(buf []byte) []byte {
 	hdr := [20]byte{}
 	hdr[0] = (4 << 4) | 5 // ver=4, IHL=5
 	hdr[8] = 64           // TTL
