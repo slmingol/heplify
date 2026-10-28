@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Capture Agent Architecture</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e2e4ef;
+    --muted: #7b8099;
+    --red: #e05c5c;
+    --amber: #d4a027;
+    --green: #3cb87a;
+    --blue: #4d8ef5;
+    --purple: #9b6cf5;
+    --teal: #2dbbb4;
+    --gap: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    padding: 32px 24px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--text); letter-spacing: .3px; }
+  .subtitle { color: var(--muted); font-size: 12px; margin-bottom: 32px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1060px; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .panel-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: .4px;
+  }
+  .badge-now { background: #2a1e1e; color: var(--red); border: 1px solid #4a2c2c; }
+  .badge-next { background: #1a2a1e; color: var(--green); border: 1px solid #254030; }
+
+  /* flow diagram */
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    position: relative;
+  }
+  .node-label { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+  .node-sub { color: var(--muted); font-size: 11px; }
+  .node.bottleneck { border-color: var(--red); background: #1c1515; }
+  .node.bottleneck .node-label { color: var(--red); }
+  .node.good { border-color: var(--green); background: #141e17; }
+  .node.good .node-label { color: var(--green); }
+  .node.neutral { border-color: var(--blue); background: #141827; }
+  .node.neutral .node-label { color: var(--blue); }
+  .node.output { border-color: var(--teal); background: #111e1e; }
+  .node.output .node-label { color: var(--teal); }
+  .node.kernel { border-color: var(--purple); background: #1a1525; }
+  .node.kernel .node-label { color: var(--purple); }
+
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2px 0;
+  }
+  .arrow-line { width: 1px; height: 14px; background: var(--border); }
+  .arrow-head {
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid var(--border);
+  }
+
+  .fanout {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-top: 0;
+  }
+  .fanout-node {
+    background: var(--surface2);
+    border: 1px solid var(--green);
+    border-radius: 6px;
+    padding: 8px 10px;
+    text-align: center;
+    background: #141e17;
+  }
+  .fanout-node .node-label { color: var(--green); font-size: 11px; }
+  .fanout-node .node-sub { font-size: 10px; }
+
+  .thread-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .thread-node {
+    background: var(--surface2);
+    border: 1px solid var(--amber);
+    border-radius: 6px;
+    padding: 8px 10px;
+    text-align: center;
+    background: #1e1a10;
+  }
+  .thread-node .node-label { color: var(--amber); font-size: 11px; }
+  .thread-node .node-sub { font-size: 10px; }
+
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: var(--muted);
+    margin: 12px 0 6px;
+    padding-left: 2px;
+  }
+
+  .limit-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .limit-hard { background: #3a1e1e; color: var(--red); }
+  .limit-soft { background: #2a2010; color: var(--amber); }
+  .limit-ok   { background: #1a2e1e; color: var(--green); }
+
+  /* bottleneck callouts */
+  .callouts { margin-top: 24px; max-width: 1060px; }
+  .callout-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 10px; }
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .callout-icon { font-size: 18px; margin-bottom: 6px; }
+  .callout-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+  .callout-body { font-size: 11px; color: var(--muted); line-height: 1.55; }
+  .callout.warn { border-color: #4a3010; }
+  .callout.warn .callout-title { color: var(--amber); }
+  .callout.crit { border-color: #4a2020; }
+  .callout.crit .callout-title { color: var(--red); }
+  .callout.ok   { border-color: #1e3e28; }
+  .callout.ok   .callout-title { color: var(--green); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; max-width: 1060px; }
+
+  .network-in {
+    background: var(--surface2);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 0;
+    text-align: center;
+  }
+  .network-in .node-label { color: var(--muted); font-size: 12px; }
+  .network-in .node-sub { font-size: 11px; }
+
+  .split-arrow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    padding: 4px 0;
+    position: relative;
+  }
+  .split-line {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .split-horizontal {
+    height: 1px;
+    background: var(--border);
+    width: 100%;
+    position: absolute;
+    top: 0;
+  }
+
+  .output-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .output-node {
+    background: #111e1e;
+    border: 1px solid var(--teal);
+    border-radius: 6px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .output-node .node-label { color: var(--teal); font-size: 11px; }
+  .output-node .node-sub { font-size: 10px; color: var(--muted); }
+
+  .ativa-node {
+    background: #141a2e;
+    border: 1px solid var(--blue);
+    border-radius: 6px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .ativa-node .node-label { color: var(--blue); }
+
+  /* three-wide fanout lines */
+  .fanout-lines {
+    display: flex;
+    justify-content: space-around;
+    padding: 0 30px;
+    position: relative;
+  }
+  .fanout-lines::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 30px; right: 30px;
+    height: 1px;
+    background: var(--border);
+  }
+  .fanout-line-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .fanout-vline { width: 1px; height: 12px; background: var(--border); }
+</style>
+</head>
+<body>
+
+<h1>Capture Agent — Packet Path &amp; Scaling Ceiling</h1>
+<p class="subtitle">captagent (today) vs heplify (path forward) — same host, same NIC</p>
+
+<div class="cols">
+
+  <!-- LEFT: captagent -->
+  <div class="panel">
+    <div class="panel-title">
+      <span style="color:var(--red)">●</span> captagent 6.4.5
+      <span class="badge badge-now">TODAY</span>
+    </div>
+
+    <div class="flow">
+      <div class="node kernel">
+        <div class="node-label">NIC / Kernel</div>
+        <div class="node-sub">Inbound SIP packets — all traffic</div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+      <div class="node bottleneck">
+        <div class="node-label">libpcap ring buffer <span class="limit-tag limit-hard">HARD CEILING</span></div>
+        <div class="node-sub">12 MiB default — kernel drops silently when full</div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+      <div class="section-label">userspace — single process</div>
+      <div class="thread-row">
+        <div class="thread-node">
+          <div class="node-label">pcap thread 1</div>
+          <div class="node-sub">drain → parse SIP</div>
+        </div>
+        <div class="thread-node">
+          <div class="node-label">pcap thread 2</div>
+          <div class="node-sub">drain → parse SIP</div>
+        </div>
+        <div class="thread-node">
+          <div class="node-label">pcap thread 3</div>
+          <div class="node-sub">drain → parse SIP</div>
+        </div>
+        <div class="thread-node">
+          <div class="node-label">pcap thread 4 <span class="limit-tag limit-soft">CONFIG MAX</span></div>
+          <div class="node-sub">drain → parse SIP</div>
+        </div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+      <div class="node neutral">
+        <div class="node-label">HEP encode</div>
+        <div class="node-sub">serialize SIP + metadata into HEP3 wire format</div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+      <div class="output-row">
+        <div class="output-node">
+          <div class="node-label">HEP/UDP</div>
+          <div class="node-sub">→ Ativa HEP input</div>
+        </div>
+        <div class="output-node">
+          <div class="node-label">ERSPAN/GRE</div>
+          <div class="node-sub">→ Ativa SPAN input</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px; padding:10px 12px; background:#1e1515; border:1px solid #4a2c2c; border-radius:5px; font-size:11px; color:var(--muted); line-height:1.6">
+      <span style="color:var(--red); font-weight:700">Ceilings:</span><br>
+      Ring buffer fills → kernel drops (invisible, no counter in captagent)<br>
+      Thread pool fixed at config time — no auto-scale<br>
+      Single process — cannot shard across NUMA nodes<br>
+      libpcap hands one packet at a time through userspace
+    </div>
+  </div>
+
+  <!-- RIGHT: heplify -->
+  <div class="panel">
+    <div class="panel-title">
+      <span style="color:var(--green)">●</span> heplify (fork)
+      <span class="badge badge-next">PATH FORWARD</span>
+    </div>
+
+    <div class="flow">
+      <div class="node kernel">
+        <div class="node-label">NIC / Kernel</div>
+        <div class="node-sub">Inbound SIP packets — all traffic</div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+      <div class="node good">
+        <div class="node-label">AF_PACKET + PACKET_FANOUT <span class="limit-tag limit-ok">KERNEL SCALE</span></div>
+        <div class="node-sub">kernel distributes packets across N sockets before userspace</div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+      <div class="section-label">userspace — Go runtime, N goroutine workers</div>
+      <div class="fanout">
+        <div class="fanout-node">
+          <div class="node-label">worker 1</div>
+          <div class="node-sub">parse + HEP encode</div>
+        </div>
+        <div class="fanout-node">
+          <div class="node-label">worker 2</div>
+          <div class="node-sub">parse + HEP encode</div>
+        </div>
+        <div class="fanout-node">
+          <div class="node-label">worker N <span class="limit-tag limit-ok">CONFIG</span></div>
+          <div class="node-sub">parse + HEP encode</div>
+        </div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+      <div class="node neutral">
+        <div class="node-label">hepQueue (chan []byte, depth 20k)</div>
+        <div class="node-sub">lock-free channel — back-pressure before drop</div>
+      </div>
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+      <div class="output-row">
+        <div class="output-node">
+          <div class="node-label">HEP/UDP · TCP · TLS</div>
+          <div class="node-sub">→ Ativa HEP input</div>
+        </div>
+        <div class="output-node" style="border-color:var(--purple); background:#1a1525">
+          <div class="node-label" style="color:var(--purple)">ERSPAN/GRE ★ PR#1</div>
+          <div class="node-sub">→ Ativa SPAN input</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px; padding:10px 12px; background:#141e17; border:1px solid #254030; border-radius:5px; font-size:11px; color:var(--muted); line-height:1.6">
+      <span style="color:var(--green); font-weight:700">Why higher ceiling:</span><br>
+      PACKET_FANOUT = kernel distributes before userspace ever sees packets<br>
+      Go goroutine scheduler: N workers auto-spill across cores<br>
+      20k-deep channel = burst absorption without kernel drops<br>
+      Prometheus metrics → observe drops before they become incidents<br>
+      ~15–30 MiB RSS vs 84–100 MiB (lower working set per packet/s)
+    </div>
+  </div>
+
+</div>
+
+<hr class="divider">
+
+<div class="callouts">
+  <div style="font-size:13px; font-weight:600; margin-bottom:12px">Immediate levers (captagent, no code change)</div>
+  <div class="callout-grid">
+    <div class="callout crit">
+      <div class="callout-icon">📦</div>
+      <div class="callout-title">ring_buffer 12 → 64 MiB</div>
+      <div class="callout-body">
+        Edit <code>socket_pcap.xml</code>: <code>&lt;param name="ring-buffer" value="64"/&gt;</code><br><br>
+        Buys burst headroom. Costs ~52 MiB RSS per interface.
+        Doesn't raise the throughput ceiling — just delays when you hit it.
+      </div>
+    </div>
+    <div class="callout warn">
+      <div class="callout-icon">🧵</div>
+      <div class="callout-title">threads 4 → 8</div>
+      <div class="callout-body">
+        Edit <code>socket_pcap.xml</code>: <code>&lt;param name="threads" value="8"/&gt;</code><br><br>
+        Marginal gain — libpcap still serializes ring access. Diminishing return past ~6. Worth testing under load.
+      </div>
+    </div>
+    <div class="callout ok">
+      <div class="callout-icon">🔀</div>
+      <div class="callout-title">Switch to heplify (ERSPAN blocker)</div>
+      <div class="callout-body">
+        Hard blocker: ERSPAN output. PR #1 on <code>slmingol/heplify</code> adds it.<br><br>
+        Needs lab validation: tshark confirm on ERSPAN type II packets, then prod rollout.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:28px; max-width:1060px; font-size:11px; color:var(--muted)">
+  ★ ERSPAN/GRE output — implemented in <code>src/transport/erspan.go</code>, PR #1 open on slmingol/heplify. Requires CAP_NET_RAW + lab validation before prod.
+</div>
+
+</body>
+</html>
