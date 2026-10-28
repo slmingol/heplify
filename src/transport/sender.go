@@ -37,15 +37,17 @@ type clientKind int
 const (
 	kindHEP    clientKind = iota
 	kindFlight clientKind = iota
+	kindERSPAN clientKind = iota
 )
 
-// transportClient is the internal union of HEP and Arrow Flight connections.
+// transportClient is the internal union of HEP, Arrow Flight, and ERSPAN connections.
 // A Sender holds a slice of these and dispatches accordingly.
 type transportClient struct {
 	kind         clientKind
 	failoverOnly bool               // if true: use only when all primary transports fail
 	hep          *HEPClient         // non-nil when kind == kindHEP
 	flight       *ArrowFlightClient // non-nil when kind == kindFlight
+	erspan       *ERSPANClient      // non-nil when kind == kindERSPAN
 }
 
 // HEPClient represents a single HEP server connection
@@ -116,7 +118,8 @@ func NewFromTransports(transports []config.TransportSettings, cfg *config.Config
 			continue
 		}
 
-		if strings.ToLower(t.Transport) == "grpc-flight" {
+		switch strings.ToLower(t.Transport) {
+		case "grpc-flight":
 			fc, err := newArrowFlightClient(t)
 			if err != nil {
 				log.Error().
@@ -127,6 +130,30 @@ func NewFromTransports(transports []config.TransportSettings, cfg *config.Config
 				continue
 			}
 			s.clients = append(s.clients, &transportClient{kind: kindFlight, failoverOnly: t.FailoverOnly, flight: fc})
+			continue
+
+		case "erspan":
+			v := uint8(t.ERSPANVersion)
+			if v == 0 {
+				v = 2
+			}
+			sid := uint16(t.ERSPANSessionID)
+			ec, err := newERSPANClient(t.Host, t.ERSPANSrcIP, v, sid)
+			if err != nil {
+				log.Error().
+					Str("component", "sender").
+					Str("dst", t.Host).
+					Err(err).
+					Msg("Failed to create ERSPAN client")
+				continue
+			}
+			log.Info().
+				Str("component", "sender").
+				Str("dst", t.Host).
+				Uint8("erspan_version", v).
+				Uint16("session_id", sid).
+				Msg("ERSPAN transport active")
+			s.clients = append(s.clients, &transportClient{kind: kindERSPAN, failoverOnly: t.FailoverOnly, erspan: ec})
 			continue
 		}
 
@@ -472,6 +499,35 @@ func (s *Sender) HasFlightClients() bool {
 	return false
 }
 
+// HasERSPANClients returns true if any active transport is erspan.
+func (s *Sender) HasERSPANClients() bool {
+	for _, tc := range s.clients {
+		if tc.kind == kindERSPAN {
+			return true
+		}
+	}
+	return false
+}
+
+// SendERSPAN dispatches a raw SIP packet to all ERSPAN transports.
+// HEP and Flight clients are skipped.
+func (s *Sender) SendERSPAN(pkt ERSPANPacket) {
+	for _, tc := range s.clients {
+		if tc.kind != kindERSPAN {
+			continue
+		}
+		if err := tc.erspan.Send(pkt); err != nil {
+			log.Error().
+				Str("component", "sender").
+				Str("dst", fmt.Sprintf("%d.%d.%d.%d", tc.erspan.dstIP[0], tc.erspan.dstIP[1], tc.erspan.dstIP[2], tc.erspan.dstIP[3])).
+				Err(err).
+				Msg("ERSPAN send failed")
+		} else {
+			logERSPANSend(tc.erspan.dstIP, tc.erspan.version, len(pkt.Payload))
+		}
+	}
+}
+
 // Send queues a message for sending to all servers
 func (s *Sender) Send(data []byte) error {
 	if s.closed.Load() {
@@ -662,6 +718,8 @@ func (s *Sender) Close() {
 			client.mu.Unlock()
 		case kindFlight:
 			tc.flight.Close()
+		case kindERSPAN:
+			tc.erspan.Close()
 		}
 	}
 	apiserver.SetQueueSize(0)
