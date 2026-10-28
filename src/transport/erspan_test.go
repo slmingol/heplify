@@ -53,7 +53,7 @@ func buildTestPacket(t *testing.T, version uint8) []byte {
 		Payload: []byte("INVITE sip:bob@example.com SIP/2.0\r\n"),
 	}
 	buf := make([]byte, 0, 256)
-	buf = c.appendOuterIP(buf, pkt)
+	buf = c.appendOuterIP(buf)
 	buf = c.appendGRE(buf)
 	buf = c.appendERSPANHdr(buf)
 	buf = appendInnerEth(buf)
@@ -160,16 +160,15 @@ func TestTypeIIIPacketLayout(t *testing.T) {
 // TestSeqNumIncrement verifies Type II seq_num increments per packet.
 func TestSeqNumIncrement(t *testing.T) {
 	c := newTestClient(2)
-	pkt := ERSPANPacket{SrcIP: "1.2.3.4", DstIP: "5.6.7.8", SrcPort: 5060, DstPort: 5060, Payload: []byte("x")}
 
 	buf1 := make([]byte, 0, 128)
-	buf1 = c.appendOuterIP(buf1, pkt)
+	buf1 = c.appendOuterIP(buf1)
 	buf1 = c.appendGRE(buf1)
 	// outer IP(20) + GRE flags(2) + GRE proto(2) = 24; seq at 24:28
 	seq1 := binary.BigEndian.Uint32(buf1[24:28])
 
 	buf2 := make([]byte, 0, 128)
-	buf2 = c.appendOuterIP(buf2, pkt)
+	buf2 = c.appendOuterIP(buf2)
 	buf2 = c.appendGRE(buf2)
 	seq2 := binary.BigEndian.Uint32(buf2[24:28])
 
@@ -181,10 +180,9 @@ func TestSeqNumIncrement(t *testing.T) {
 // TestTypeINoSeqNum validates that Type I never writes a sequence field.
 func TestTypeINoSeqNum(t *testing.T) {
 	c := newTestClient(1)
-	pkt := ERSPANPacket{SrcIP: "1.2.3.4", DstIP: "5.6.7.8", SrcPort: 5060, DstPort: 5060, Payload: []byte("x")}
 
 	buf := make([]byte, 0, 128)
-	buf = c.appendOuterIP(buf, pkt)
+	buf = c.appendOuterIP(buf)
 	buf = c.appendGRE(buf)
 	// Type I: GRE base = 4 bytes. Total GRE block = 4 bytes. Next is inner Eth at offset 24.
 	// The inner Eth should NOT have sequence number prepended.
