@@ -35,7 +35,7 @@ type ERSPANPacket struct {
 
 // GRE/ERSPAN protocol constants (IANA / Cisco drafts).
 const (
-	ipProtoGRE   = 47
+	ipProtoGRE      = 47
 	greProtoTypeI   = 0x6558 // transparent Ethernet bridging
 	greProtoTypeII  = 0x88BE // ERSPAN Type II
 	greProtoTypeIII = 0x22EB // ERSPAN Type III
@@ -132,9 +132,9 @@ func (c *ERSPANClient) Close() {
 // appendOuterIP writes a zero-checksum outer IPv4 header (checksum filled by fixOuterIP).
 func (c *ERSPANClient) appendOuterIP(buf []byte, pkt ERSPANPacket) []byte {
 	hdr := [20]byte{}
-	hdr[0] = (4 << 4) | 5     // ver=4, IHL=5
-	hdr[8] = 64               // TTL
-	hdr[9] = ipProtoGRE       // protocol
+	hdr[0] = (4 << 4) | 5 // ver=4, IHL=5
+	hdr[8] = 64           // TTL
+	hdr[9] = ipProtoGRE   // protocol
 	// tot_len at [2:4] left zero — fixOuterIP fills it
 	copy(hdr[12:16], c.srcIP[:])
 	copy(hdr[16:20], c.dstIP[:])
@@ -183,7 +183,7 @@ func (c *ERSPANClient) appendERSPANHdr(buf []byte) []byte {
 		buf = appendUint32BE(buf, 0)
 		// Word 3: sgt[31:16]=0, flags[15:0]=0
 		buf = appendUint32BE(buf, 0)
-	// Type I: no ERSPAN header
+		// Type I: no ERSPAN header
 	}
 	return buf
 }
@@ -199,8 +199,8 @@ func appendInnerEth(buf []byte) []byte {
 func appendInnerIP(buf []byte, pkt ERSPANPacket) []byte {
 	hdr := [20]byte{}
 	hdr[0] = (4 << 4) | 5 // ver=4, IHL=5
-	hdr[8] = 64            // TTL
-	hdr[9] = 17            // protocol=UDP
+	hdr[8] = 64           // TTL
+	hdr[9] = 17           // protocol=UDP
 
 	innerTotal := uint16(20 + 8 + len(pkt.Payload))
 	binary.BigEndian.PutUint16(hdr[2:4], innerTotal)

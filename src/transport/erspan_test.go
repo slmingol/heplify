@@ -10,8 +10,8 @@ import (
 func TestIPChecksum(t *testing.T) {
 	hdr := [20]byte{}
 	hdr[0] = (4 << 4) | 5 // ver=4, IHL=5
-	hdr[8] = 64            // TTL
-	hdr[9] = 17            // UDP
+	hdr[8] = 64           // TTL
+	hdr[9] = 17           // UDP
 	binary.BigEndian.PutUint16(hdr[2:4], 40)
 	copy(hdr[12:16], net.ParseIP("10.0.0.1").To4())
 	copy(hdr[16:20], net.ParseIP("10.0.0.2").To4())
