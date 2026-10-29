@@ -28,24 +28,25 @@ concurrency:
 
 env:
   GO_VERSION_FILE: go.mod
-  IMAGE_NAME: ghcr.io/sipcapture/heplify
+  IMAGE_NAME: ghcr.io/slmingol/heplify
 
 jobs:
   build:
     name: Build & Package (${{ matrix.goos }}/${{ matrix.goarch }})
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
           - goarch: amd64
             goos: linux
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
           - goarch: arm64
             goos: linux
             runner: ubuntu-24.04-arm
           - goarch: arm64
             goos: darwin
-            runner: macos-latest
+            runner: macos-15
           - goarch: amd64
             goos: windows
             runner: windows-latest
@@ -230,12 +231,13 @@ jobs:
 
   docker:
     name: Docker image (${{ matrix.goarch }})
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         include:
           - goarch: amd64
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
             platform: linux/amd64
           - goarch: arm64
             runner: ubuntu-24.04-arm
@@ -312,7 +314,8 @@ jobs:
   docker-manifest:
     name: Docker multi-arch manifest
     needs: docker
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     steps:
       - name: Resolve version
@@ -367,7 +370,7 @@ jobs:
         if: steps.dockerhub.outputs.available == 'true'
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
-          HUB_IMAGE="sipcapture/heplify"
+          HUB_IMAGE="slmingol/heplify"
           docker buildx imagetools create \
             --tag "${HUB_IMAGE}:${VERSION}" \
             --tag "${HUB_IMAGE}:latest" \
@@ -377,7 +380,8 @@ jobs:
   release:
     name: Create GitHub Release
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -433,18 +437,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Single runner pushes all debs/rpms in order — avoids parallel Packagecloud API races.
-  # Same repos as homer-core: qxip/sipcapture/any/any and rpm_any/rpm_any
-  #
-  # Skip Packagecloud on github.event_name == 'release': publishing the GitHub Release
-  # (release job) triggers a second workflow run; packages were already pushed on tag push.
-  # Skip when PACKAGECLOUD_TOKEN is unset or empty (forks, dev repos without Packagecloud).
-  # TEMP: push disabled until PACKAGECLOUD_TOKEN is fixed — restore:
-  #   success() && secrets.PACKAGECLOUD_TOKEN != '' && (...)
+  # Packagecloud push disabled — fork does not have upstream qxip/sipcapture credentials.
+  # Re-enable when publishing to a fork-owned Packagecloud repo.
   packagecloud:
     name: Push to Packagecloud
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: false
     env:
       PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
