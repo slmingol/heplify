@@ -102,7 +102,7 @@ nfpms:
         dst: /etc/heplify/example.lua
         type: config|noreplace
       - src: examples/heplify.service
-        dst: /etc/systemd/system/heplify.service
+        dst: /usr/lib/systemd/system/heplify.service
       - src: examples/heplify.init
         dst: /etc/init.d/heplify
         file_info:
