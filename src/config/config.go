@@ -210,17 +210,16 @@ type ScriptSettings struct {
 func (c *Config) Validate() error {
 	for i, t := range c.TransportSettings {
 		if t.Active {
-			if t.Port < 1 || t.Port > 65535 {
-				return fmt.Errorf("transport[%d] has invalid port: %d", i, t.Port)
-			}
 			if t.Host == "" {
 				return fmt.Errorf("transport[%d] has empty host", i)
 			}
 			switch strings.ToLower(t.Transport) {
 			case "udp", "tcp", "tls", "grpc-flight", "":
-				// port validation already done above
+				if t.Port < 1 || t.Port > 65535 {
+					return fmt.Errorf("transport[%d] has invalid port: %d", i, t.Port)
+				}
 			case "erspan":
-				// ERSPAN uses Host as dst IP; port is unused but not an error if set.
+				// ERSPAN is a raw GRE socket; port is unused and must not be required.
 				v := t.ERSPANVersion
 				if v != 0 && (v < 1 || v > 3) {
 					return fmt.Errorf("transport[%d] erspan_version must be 1, 2, or 3, got %d", i, v)
@@ -228,7 +227,6 @@ func (c *Config) Validate() error {
 				if t.ERSPANSessionID < 0 || t.ERSPANSessionID > 1023 {
 					return fmt.Errorf("transport[%d] erspan_session_id must be 0–1023, got %d", i, t.ERSPANSessionID)
 				}
-				// Skip port range check — ERSPAN is raw socket, no port needed.
 				continue
 			default:
 				return fmt.Errorf("transport[%d] has unsupported transport: %s", i, t.Transport)

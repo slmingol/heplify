@@ -47,6 +47,35 @@ func TestValidateConfigRejectsInvalidPort(t *testing.T) {
 	}
 }
 
+func TestValidateERSPANNoPort(t *testing.T) {
+	cfg := &Config{}
+	cfg.TransportSettings = []TransportSettings{
+		{
+			Name:           "erspan-out",
+			Active:         true,
+			Host:           "10.0.0.1",
+			Transport:      "erspan",
+			ERSPANVersion:  2,
+			ERSPANSessionID: 1,
+			ERSPANSrcIP:   "192.168.1.10",
+			// Port intentionally 0 — ERSPAN needs no port
+		},
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("ERSPAN with port=0 should be valid, got: %v", err)
+	}
+}
+
+func TestValidateERSPANBadVersion(t *testing.T) {
+	cfg := &Config{}
+	cfg.TransportSettings = []TransportSettings{
+		{Name: "erspan-bad", Active: true, Host: "10.0.0.1", Transport: "erspan", ERSPANVersion: 5},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected error for erspan_version=5")
+	}
+}
+
 func TestLoadConfigFromFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfgPath := filepath.Join(tmpDir, "test_config.json")
