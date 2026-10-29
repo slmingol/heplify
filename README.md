@@ -105,12 +105,24 @@ journalctl -u heplify -f
 
 - **Upgrade**: the configuration is preserved and the service is restarted if it was running.
 - **Removal**: the service is stopped and disabled. `apt purge heplify` also deletes `/var/lib/heplify`; the `heplify` user is kept. `rpm` has no purge, so `/var/lib/heplify` is kept when removing an rpm.
-- **Writing outside `/var/lib/heplify`** (for example a pcap output file) is blocked by the sandbox. Allow it with a drop-in created by `sudo systemctl edit heplify`:
+- **Local adjustments** are made with a systemd drop-in (`sudo systemctl edit heplify`), because the service is sandboxed:
 
-  ```ini
-  [Service]
-  ReadWritePaths=/path/to/dir
-  ```
+  - *Writing outside `/var/lib/heplify`* (for example a pcap output file) is blocked. Allow it with:
+
+    ```ini
+    [Service]
+    ReadWritePaths=/path/to/dir
+    ```
+
+  - *Ports below 1024* (for example a collector or API listening on UDP 514 or TCP 443) fail with `bind: permission denied`, because the service only has `CAP_NET_RAW` and `CAP_NET_ADMIN`. Either use a port of 1024 or above, or grant the capability:
+
+    ```ini
+    [Service]
+    AmbientCapabilities=CAP_NET_BIND_SERVICE
+    CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+    ```
+
+  - *Files named in the configuration* (TLS certificates and keys, Lua scripts, pcap files to read) must be readable by the `heplify` user and must not be under `/home` or `/root`. For a key owned by another group, add `SupplementaryGroups=<group>` in the drop-in.
 
 ### macOS (Apple Silicon)
 
