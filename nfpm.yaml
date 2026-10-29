@@ -22,7 +22,7 @@ homepage: "https://github.com/sipcapture/heplify"
 # license omitted: nfpm writes "License:" into deb control; Packagecloud may 500.
 contents:
   - src: ./heplify
-    dst: /usr/local/bin/heplify
+    dst: /usr/bin/heplify
 
   - src: ./examples/heplify.json
     dst: /etc/heplify/heplify.json
@@ -37,3 +37,5 @@ contents:
 
   - src: ./examples/heplify.init
     dst: /etc/init.d/heplify
+    file_info:
+      mode: 0755

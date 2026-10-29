@@ -2,6 +2,8 @@
 #
 # Install:
 #   cp heplify.service /etc/systemd/system/
+#   (the packages install the binary to /usr/bin/heplify; adjust ExecStart if
+#   you installed it elsewhere, e.g. /usr/local/bin/heplify)
 #   systemctl daemon-reload
 #   systemctl enable --now heplify
 
@@ -13,7 +15,7 @@ Wants=network-online.target
 
 [Service]
 Environment="HEPLIFY_CONFIG=/etc/heplify/heplify.json"
-ExecStart=/usr/local/bin/heplify -config ${HEPLIFY_CONFIG}
+ExecStart=/usr/bin/heplify -config ${HEPLIFY_CONFIG}
 Restart=always
 RestartSec=3s
 Type=simple
