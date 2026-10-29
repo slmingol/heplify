@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Packaging ([#364](https://github.com/sipcapture/heplify/issues/364))**: install the binary to `/usr/bin/heplify` in the deb/rpm packages (was `/usr/local/bin`) and update the shipped systemd unit and init script; fix the file paths in `.goreleaser.yml` and ship the service files there too; make `/etc/init.d/heplify` executable.
+
 ## [2.0.28] - 2026-09-04
 
 ### Fixed
