@@ -330,6 +330,7 @@ FROM sipcapture/heplify:latest
 
 ```bash
 docker run --rm --net=host \
+  --cap-add NET_RAW --cap-add NET_ADMIN \
   -v /etc/heplify/heplify.json:/etc/heplify/heplify.json:ro \
   -e HEPLIFY_TRANSPORT__0__HOST=homer.example.com \
   -e HEPLIFY_TRANSPORT__0__PORT=9060 \
@@ -347,6 +348,9 @@ services:
   heplify:
     image: sipcapture/heplify:latest
     network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     volumes:
       - ./heplify.json:/etc/heplify/heplify.json:ro
     environment:

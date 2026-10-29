@@ -110,6 +110,19 @@ make build
 docker build --no-cache -t sipcapture/heplify:latest -f docker/Dockerfile .
 ```
 
+The image is based on Debian 13 (trixie) by default; build on another release with
+`--build-arg DEBIAN_RELEASE=bookworm` (any release published for both the `golang` and `debian` images works).
+
+The container runs as the unprivileged `heplify` user. Capture is enabled by file capabilities on the
+binary, so the container **must** be granted both `NET_RAW` and `NET_ADMIN` (`cap_add`, as in the examples
+below), otherwise the binary cannot start. Use `--user root` to get the previous behaviour.
+
+A ready-to-use Compose file is provided (it mounts `examples/heplify.json`; edit it first):
+
+```bash
+docker compose -f docker/compose.yaml up --build -d
+```
+
 ```yaml
 heplify:
   image: sipcapture/heplify:latest
