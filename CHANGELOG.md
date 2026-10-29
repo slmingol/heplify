@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Packaging ([#366](https://github.com/sipcapture/heplify/issues/366))**: the deb/rpm packages now create a `heplify` system user and ship `postinstall`/`preremove`/`postremove` scripts (daemon-reload, restart on upgrade, stop and disable on removal, state directory cleanup on purge). The systemd unit runs as `heplify` with only `CAP_NET_RAW`/`CAP_NET_ADMIN`, sandboxing options, `StateDirectory=heplify` as working directory and `After=network-online.target`; `/etc/heplify/heplify.json` is now mode 0640 (`root:heplify`). Configurations that write outside `/var/lib/heplify` need a `ReadWritePaths=` drop-in.
+
 ### Fixed
 
 - **Packaging ([#364](https://github.com/sipcapture/heplify/issues/364))**: install the binary to `/usr/bin/heplify` in the deb/rpm packages (was `/usr/local/bin`) and update the shipped systemd unit and init script; fix the file paths in `.goreleaser.yml` and ship the service files there too; make `/etc/init.d/heplify` executable.

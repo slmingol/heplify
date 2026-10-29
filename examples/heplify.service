@@ -1,26 +1,63 @@
 # systemd unit for heplify
 #
-# Install:
+# Install (the deb/rpm packages do all of this, including creating the user):
+#   groupadd --system heplify
+#   useradd --system --gid heplify --home-dir /var/lib/heplify --no-create-home \
+#       --shell /usr/sbin/nologin heplify
 #   cp heplify.service /etc/systemd/system/
 #   (the packages install the binary to /usr/bin/heplify; adjust ExecStart if
 #   you installed it elsewhere, e.g. /usr/local/bin/heplify)
 #   systemctl daemon-reload
 #   systemctl enable --now heplify
+#
+# The service runs unprivileged with only CAP_NET_RAW (packet capture) and
+# CAP_NET_ADMIN (socket buffer sizing), and the filesystem is read-only except
+# /var/lib/heplify (StateDirectory, also the working directory: relative paths
+# such as the HEP buffer file "hep-buffer.dump" end up there).
+# If your configuration writes elsewhere (e.g. a pcap output file), allow it
+# with a drop-in (systemctl edit heplify):
+#   [Service]
+#   ReadWritePaths=/path/to/dir
 
 [Unit]
 Description=heplify - HEP Agent and Collector
 Documentation=https://github.com/sipcapture/heplify
-After=network.target
+After=network-online.target
 Wants=network-online.target
 
 [Service]
+Type=simple
 Environment="HEPLIFY_CONFIG=/etc/heplify/heplify.json"
 ExecStart=/usr/bin/heplify -config ${HEPLIFY_CONFIG}
 Restart=always
 RestartSec=3s
-Type=simple
-User=root
 LimitNOFILE=65536
+
+User=heplify
+Group=heplify
+StateDirectory=heplify
+WorkingDirectory=/var/lib/heplify
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
+
+# Sandboxing
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK AF_PACKET
+SystemCallArchitectures=native
 
 [Install]
 WantedBy=multi-user.target
