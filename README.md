@@ -91,7 +91,7 @@ The package installs:
 | `/usr/bin/heplify` | the binary |
 | `/etc/heplify/heplify.json` | configuration (kept on upgrade; mode `0640`, owner `root:heplify`, as it may contain passwords) |
 | `/etc/heplify/example.lua` | example Lua script |
-| `/etc/systemd/system/heplify.service` | systemd unit |
+| `/usr/lib/systemd/system/heplify.service` | systemd unit (customize with `systemctl edit heplify`) |
 | `/var/lib/heplify` | state directory and working directory (e.g. the HEP buffer file) |
 
 The service runs as the unprivileged `heplify` system user, created by the package, with only the `CAP_NET_RAW` and `CAP_NET_ADMIN` capabilities and a sandboxed filesystem.
