@@ -517,6 +517,7 @@ func (s *Sender) SendERSPAN(pkt ERSPANPacket) {
 			continue
 		}
 		if err := tc.erspan.Send(pkt); err != nil {
+			apiserver.ERSPANErrorCount.Inc()
 			log.Error().
 				Str("component", "sender").
 				Str("dst", fmt.Sprintf("%d.%d.%d.%d", tc.erspan.dstIP[0], tc.erspan.dstIP[1], tc.erspan.dstIP[2], tc.erspan.dstIP[3])).
