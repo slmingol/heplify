@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # build_package.sh - Build heplify deb/rpm packages using nfpm via Docker
+#   (deb: dynamically linked binary, rpm: static binary)
 #
 # Usage:
 #   ./scripts/build_package.sh [VERSION]
@@ -69,12 +70,17 @@ if ! command -v docker &>/dev/null; then
     exit 1
 fi
 
+# --- Dynamic binary for the DEB (system libc and libpcap, built on Debian 12) ---
+log_info "Building dynamically linked binary for the .deb..."
+VERSION="${VERSION}" "${SCRIPT_DIR}/build_deb_binary.sh" "${ROOT_DIR}/${PACKAGE}-deb"
+
 # --- Build DEB ---
 log_info "Building .deb package..."
 docker run --rm \
     -v "${ROOT_DIR}:/tmp/pkg" \
     -e VERSION="${VERSION}" \
     -e ARCH="${ARCH}" \
+    -e BINARY="${PACKAGE}-deb" \
     -w /tmp/pkg \
     goreleaser/nfpm pkg \
         --config /tmp/pkg/nfpm.yaml \
@@ -87,6 +93,7 @@ docker run --rm \
     -v "${ROOT_DIR}:/tmp/pkg" \
     -e VERSION="${VERSION}" \
     -e ARCH="${ARCH}" \
+    -e BINARY="${PACKAGE}" \
     -w /tmp/pkg \
     goreleaser/nfpm pkg \
         --config /tmp/pkg/nfpm.yaml \
@@ -95,4 +102,5 @@ log_info "Created: ${PACKAGE}-${VERSION}-${ARCH}.rpm"
 
 echo ""
 log_info "Done! Packages:"
+rm -f "${ROOT_DIR}/${PACKAGE}-deb"
 ls -lh "${ROOT_DIR}/${PACKAGE}-${VERSION}-${ARCH}".{deb,rpm} 2>/dev/null || true
