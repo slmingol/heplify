@@ -104,12 +104,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: ${{ env.GO_VERSION_FILE }}
           cache: true
@@ -138,7 +138,7 @@ jobs:
       - name: Cache local libpcap
         if: matrix.goos == 'linux'
         id: cache-libpcap
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: build/libpcap
           key: libpcap-1.10.4-${{ matrix.goarch }}-${{ runner.os }}
@@ -202,7 +202,7 @@ jobs:
       # Single Linux artifact per arch: binary + deb + rpm (Packagecloud downloads heplify-linux-*).
       - name: Upload artifacts (Linux)
         if: matrix.goos == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: heplify-${{ matrix.goos }}-${{ matrix.goarch }}
           retention-days: 1
@@ -213,7 +213,7 @@ jobs:
 
       - name: Upload artifacts (macOS)
         if: matrix.goos == 'darwin'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: heplify-${{ matrix.goos }}-${{ matrix.goarch }}
           retention-days: 1
@@ -222,7 +222,7 @@ jobs:
 
       - name: Upload artifacts (Windows)
         if: matrix.goos == 'windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: heplify-${{ matrix.goos }}-${{ matrix.goarch }}
           retention-days: 1
@@ -251,7 +251,25 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+          VERSION="${TAG#v}"
+          GIT_COMMIT="$(git rev-parse --short HEAD)"
+          BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "VERSION=${VERSION}"       >> "$GITHUB_OUTPUT"
+          echo "GIT_COMMIT=${GIT_COMMIT}" >> "$GITHUB_OUTPUT"
+          echo "BUILD_DATE=${BUILD_DATE}" >> "$GITHUB_OUTPUT"
+          echo "TAG=${TAG}"               >> "$GITHUB_OUTPUT"
 
       - name: Check DockerHub credentials
         id: dockerhub
@@ -266,10 +284,10 @@ jobs:
           fi
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -277,13 +295,13 @@ jobs:
 
       - name: Log in to Docker Hub
         if: steps.dockerhub.outputs.available == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push arch-specific image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: docker/Dockerfile
@@ -322,7 +340,7 @@ jobs:
           fi
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -330,7 +348,7 @@ jobs:
 
       - name: Log in to Docker Hub
         if: steps.dockerhub.outputs.available == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -366,12 +384,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: dist/
 
@@ -396,7 +414,7 @@ jobs:
           ls -lh dist/flat/
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           name: "heplify v${{ needs.version.outputs.version }}"
@@ -486,7 +504,7 @@ jobs:
     env:
       PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: pkgs
           pattern: heplify-linux-*
