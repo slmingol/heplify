@@ -923,7 +923,7 @@ func (s *Sniffer) sendHEPWithMOS(pkt *decoder.Packet, protoType byte, mos uint16
 			DstPort: pkt.DstPort,
 			Payload: pkt.Payload,
 		})
-		s.stats.Inc(StatHEPSent)
+		s.stats.Inc(StatERSPANSent)
 		return
 	}
 
