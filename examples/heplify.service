@@ -7,11 +7,11 @@
 #   cp heplify.service /etc/systemd/system/
 #   (the packages install the binary to /usr/bin/heplify; adjust ExecStart if
 #   you installed it elsewhere, e.g. /usr/local/bin/heplify)
+#   systemctl daemon-reload
+#   systemctl enable --now heplify
 #
 # The packages install this unit to /usr/lib/systemd/system/; customize it with
 # 'systemctl edit heplify' (drop-in) rather than by editing the file.
-#   systemctl daemon-reload
-#   systemctl enable --now heplify
 #
 # The service runs unprivileged with only CAP_NET_RAW (packet capture) and
 # CAP_NET_ADMIN (socket buffer sizing), and the filesystem is read-only except
