@@ -18,6 +18,7 @@ const (
 	StatDiameter
 	StatLog
 	StatHEPSent
+	StatERSPANSent
 	StatDuplicates
 	StatUnknown
 	statCount
@@ -36,6 +37,7 @@ type StatsSnapshot struct {
 	Diameter      int64
 	Log           int64
 	HEPSent       int64
+	ERSPANSent    int64
 	Duplicates    int64
 	Unknown       int64
 }
@@ -78,6 +80,8 @@ func statPrometheusLabel(idx int) string {
 		return "log"
 	case StatHEPSent:
 		return "hep_sent"
+	case StatERSPANSent:
+		return "erspan_sent"
 	case StatDuplicates:
 		return "duplicates"
 	case StatUnknown:
@@ -98,6 +102,7 @@ func (s *Stats) Snapshot() StatsSnapshot {
 	diameter := s.totals[StatDiameter].Load()
 	logPkts := s.totals[StatLog].Load()
 	hepSent := s.totals[StatHEPSent].Load()
+	erspanSent := s.totals[StatERSPANSent].Load()
 	dups := s.totals[StatDuplicates].Load()
 	unknown := s.totals[StatUnknown].Load()
 	return StatsSnapshot{
@@ -111,6 +116,7 @@ func (s *Stats) Snapshot() StatsSnapshot {
 		Diameter:      diameter,
 		Log:           logPkts,
 		HEPSent:       hepSent,
+		ERSPANSent:    erspanSent,
 		Duplicates:    dups,
 		Unknown:       unknown,
 	}
@@ -144,6 +150,7 @@ func (s *Stats) RunLogger() {
 		diameter := s.counters[StatDiameter].Swap(0)
 		logPkts := s.counters[StatLog].Swap(0)
 		hepSent := s.counters[StatHEPSent].Swap(0)
+		erspanSent := s.counters[StatERSPANSent].Swap(0)
 		dups := s.counters[StatDuplicates].Swap(0)
 		unknown := s.counters[StatUnknown].Swap(0)
 		total := sip + rtcp + rtcpFail + rtp + dns + diameter + logPkts + dups + unknown
@@ -158,6 +165,7 @@ func (s *Stats) RunLogger() {
 			Int64("diameter", diameter).
 			Int64("log", logPkts).
 			Int64("hep_sent", hepSent).
+			Int64("erspan_sent", erspanSent).
 			Int64("duplicates", dups).
 			Int64("unknown", unknown).
 			Msg("per-minute packet stats")
