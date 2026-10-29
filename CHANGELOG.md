@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Packaging ([#366](https://github.com/sipcapture/heplify/issues/366))**: the deb/rpm packages now create a `heplify` system user and ship `postinstall`/`preremove`/`postremove` scripts (creates `/var/lib/heplify`, daemon-reload, restart on upgrade, stop and disable on removal, state directory cleanup on purge). The systemd unit runs as `heplify` with only `CAP_NET_RAW`/`CAP_NET_ADMIN`, sandboxing options, `StateDirectory=heplify` as working directory and `After=network-online.target`; `/etc/heplify/heplify.json` is now mode 0640 (`root:heplify`). Upgrade notes: configurations that write outside `/var/lib/heplify` need a `ReadWritePaths=` drop-in, listeners on ports below 1024 need a `CAP_NET_BIND_SERVICE` drop-in, and files named in the configuration (TLS keys, Lua scripts, ...) must be readable by the `heplify` user and not live under `/home` or `/root`; see the header of the unit. The unit is now installed to `/usr/lib/systemd/system/heplify.service` (was `/etc/systemd/system/`, which is reserved for local administration); upgrading removes the old file, so move any local edits to a drop-in (`systemctl edit heplify`) beforehand.
+
 ### Fixed
 
 - **Packaging ([#364](https://github.com/sipcapture/heplify/issues/364))**: install the binary to `/usr/bin/heplify` in the deb/rpm packages (was `/usr/local/bin`) and update the shipped systemd unit and init script; fix the file paths in `.goreleaser.yml` and ship the service files there too; make `/etc/init.d/heplify` executable.
