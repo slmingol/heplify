@@ -83,7 +83,7 @@ chmod +x heplify_darwin_arm64
 sudo ./heplify_darwin_arm64 -config heplify.json
 ```
 
-After each release, bump `version` and `sha256` in [`Formula/heplify.rb`](Formula/heplify.rb) (Apple Silicon binary only).
+After each release, run `scripts/update_formula.sh <VERSION>` to update the URL and `sha256` in [`Formula/heplify.rb`](Formula/heplify.rb) (Apple Silicon binary only).
 
 ### Windows
 

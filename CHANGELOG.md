@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Packaging ([#364](https://github.com/sipcapture/heplify/issues/364))**: install the binary to `/usr/bin/heplify` in the deb/rpm packages (was `/usr/local/bin`) and update the shipped systemd unit and init script; fix the file paths in `.goreleaser.yml` and ship the service files there too; make `/etc/init.d/heplify` executable.
+- **Homebrew formula ([#370](https://github.com/sipcapture/heplify/issues/370))**: bump `Formula/heplify.rb` from 2.0.17 to 2.0.28, fail clearly on unsupported platforms (`depends_on arch: :arm64` / `:macos`), add a `livecheck` block, and add `scripts/update_formula.sh` to bump the URL and sha256 from a release.
 
 ## [2.0.28] - 2026-09-04
 
