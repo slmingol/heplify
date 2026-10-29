@@ -3,7 +3,7 @@
 # VERSION is passed via environment variable: VERSION=1.2.3 nfpm pkg ...
 
 name: "heplify"
-arch: "amd64"
+arch: "${ARCH}"
 platform: "linux"
 version: "${VERSION}"
 section: "net"

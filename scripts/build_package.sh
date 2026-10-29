@@ -74,6 +74,7 @@ log_info "Building .deb package..."
 docker run --rm \
     -v "${ROOT_DIR}:/tmp/pkg" \
     -e VERSION="${VERSION}" \
+    -e ARCH="${ARCH}" \
     -w /tmp/pkg \
     goreleaser/nfpm pkg \
         --config /tmp/pkg/nfpm.yaml \
@@ -85,6 +86,7 @@ log_info "Building .rpm package..."
 docker run --rm \
     -v "${ROOT_DIR}:/tmp/pkg" \
     -e VERSION="${VERSION}" \
+    -e ARCH="${ARCH}" \
     -w /tmp/pkg \
     goreleaser/nfpm pkg \
         --config /tmp/pkg/nfpm.yaml \
