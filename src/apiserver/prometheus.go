@@ -44,6 +44,12 @@ var (
 			Help: "Total number of HEP send errors",
 		},
 	)
+	ERSPANErrorCount = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "heplify_erspan_error_count",
+			Help: "Total number of ERSPAN send errors",
+		},
+	)
 	HepDroppedCount = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "heplify_hep_dropped_count",
@@ -91,6 +97,7 @@ func init() {
 	prometheus.MustRegister(SIPResponseCount)
 	prometheus.MustRegister(HepSentCount)
 	prometheus.MustRegister(HepErrorCount)
+	prometheus.MustRegister(ERSPANErrorCount)
 	prometheus.MustRegister(HepDroppedCount)
 	prometheus.MustRegister(HepReconnectCount)
 	prometheus.MustRegister(HepQueueSize)
