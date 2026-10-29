@@ -179,6 +179,12 @@ jobs:
           echo "=== Version dump ==="
           ./heplify_${{ matrix.goos }}_${{ matrix.goarch }}${EXT} -version
 
+      # The deb ships a dynamically linked binary built on Debian 12 (libc and
+      # libpcap from the system); the rpm and the release asset stay static.
+      - name: Build dynamic binary for the deb
+        if: matrix.goos == 'linux'
+        run: ./scripts/build_deb_binary.sh heplify_deb_${{ matrix.goarch }}
+
       - name: Get nfpm
         if: matrix.goos == 'linux'
         run: |
@@ -192,11 +198,10 @@ jobs:
         env:
           ARCH: ${{ matrix.goarch }}
         run: |
-          cp heplify_${{ matrix.goos }}_${{ matrix.goarch }} heplify
-          echo "=== Binary type ==="
-          file heplify
-          ./nfpm pkg --config nfpm.yaml --target "./heplify_${VERSION}_${ARCH}.deb"
-          ./nfpm pkg --config nfpm.yaml --target "./heplify_${VERSION}_${ARCH}.rpm"
+          echo "=== Binary types ==="
+          file "heplify_deb_${ARCH}" "heplify_linux_${ARCH}"
+          BINARY="heplify_deb_${ARCH}" ./nfpm pkg --config nfpm.yaml --target "./heplify_${VERSION}_${ARCH}.deb"
+          BINARY="heplify_linux_${ARCH}" ./nfpm pkg --config nfpm.yaml --target "./heplify_${VERSION}_${ARCH}.rpm"
           ls -lh heplify_*.deb heplify_*.rpm heplify_${{ matrix.goos }}_${{ matrix.goarch }}
 
       # Single Linux artifact per arch: binary + deb + rpm (Packagecloud downloads heplify-linux-*).
