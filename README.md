@@ -69,7 +69,7 @@ chmod +x heplify_linux_amd64
 
 ### Linux packages (Debian, Ubuntu, RHEL and derivatives)
 
-Each [release](https://github.com/sipcapture/heplify/releases) provides `.deb` and `.rpm` packages for `amd64` and `arm64`. They contain a statically linked binary, so there are no library dependencies.
+Each [release](https://github.com/sipcapture/heplify/releases) provides `.deb` and `.rpm` packages for `amd64` and `arm64`. The `.deb` uses the system libraries (it depends on `libc6` and `libpcap0.8`, installed automatically by `apt`) and requires Debian 12+ or Ubuntu 22.04+; on older systems use the static binary from the same page. The `.rpm` contains a statically linked binary, so it has no library dependencies.
 
 ```bash
 VERSION=2.0.28   # the release to install, see the releases page
