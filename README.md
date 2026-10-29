@@ -67,6 +67,51 @@ chmod +x heplify_linux_amd64
 ./heplify_linux_amd64 -config heplify.json
 ```
 
+### Linux packages (Debian, Ubuntu, RHEL and derivatives)
+
+Each [release](https://github.com/sipcapture/heplify/releases) provides `.deb` and `.rpm` packages for `amd64` and `arm64`. They contain a statically linked binary, so there are no library dependencies.
+
+```bash
+VERSION=2.0.28   # the release to install, see the releases page
+ARCH=amd64       # or arm64
+
+# Debian / Ubuntu
+curl -fsSLO "https://github.com/sipcapture/heplify/releases/download/${VERSION}/heplify_${VERSION}_${ARCH}.deb"
+sudo apt install "./heplify_${VERSION}_${ARCH}.deb"
+
+# RHEL / Rocky / Alma / Fedora
+curl -fsSLO "https://github.com/sipcapture/heplify/releases/download/${VERSION}/heplify_${VERSION}_${ARCH}.rpm"
+sudo dnf install "./heplify_${VERSION}_${ARCH}.rpm"
+```
+
+The package installs:
+
+| Path | Content |
+|------|---------|
+| `/usr/bin/heplify` | the binary |
+| `/etc/heplify/heplify.json` | configuration (kept on upgrade; mode `0640`, owner `root:heplify`, as it may contain passwords) |
+| `/etc/heplify/example.lua` | example Lua script |
+| `/etc/systemd/system/heplify.service` | systemd unit |
+| `/var/lib/heplify` | state directory and working directory (e.g. the HEP buffer file) |
+
+The service runs as the unprivileged `heplify` system user, created by the package, with only the `CAP_NET_RAW` and `CAP_NET_ADMIN` capabilities and a sandboxed filesystem.
+
+A fresh install does **not** start the service, so that the default configuration is not run blindly. Edit `/etc/heplify/heplify.json` (at least the `transport` section with your HEP server and the capture `device`), then:
+
+```bash
+sudo systemctl enable --now heplify
+journalctl -u heplify -f
+```
+
+- **Upgrade**: the configuration is preserved and the service is restarted if it was running.
+- **Removal**: the service is stopped and disabled. `apt purge heplify` also deletes `/var/lib/heplify`; the `heplify` user is kept. `rpm` has no purge, so `/var/lib/heplify` is kept when removing an rpm.
+- **Writing outside `/var/lib/heplify`** (for example a pcap output file) is blocked by the sandbox. Allow it with a drop-in created by `sudo systemctl edit heplify`:
+
+  ```ini
+  [Service]
+  ReadWritePaths=/path/to/dir
+  ```
+
 ### macOS (Apple Silicon)
 
 **Homebrew** (tap lives in this repo):
