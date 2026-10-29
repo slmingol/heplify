@@ -12,6 +12,11 @@ if ! getent passwd heplify >/dev/null 2>&1; then
         --shell "$nologin" --comment "heplify HEP agent" heplify
 fi
 
+# Home/state directory. Also created by the unit (StateDirectory=), but doing it
+# here keeps the account's home valid right after install. Not shipped in the
+# package: dpkg would chown it before this script has created the user.
+install -d -o heplify -g heplify -m 0750 /var/lib/heplify
+
 # The config may hold HEP/Prometheus passwords: readable by the service only.
 if [ -f /etc/heplify/heplify.json ]; then
     chgrp heplify /etc/heplify/heplify.json

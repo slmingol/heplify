@@ -36,6 +36,7 @@ LimitNOFILE=65536
 User=heplify
 Group=heplify
 StateDirectory=heplify
+StateDirectoryMode=0750
 WorkingDirectory=/var/lib/heplify
 AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
 CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
