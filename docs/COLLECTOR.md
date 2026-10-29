@@ -25,6 +25,8 @@ Agent B ──HEP──▶
 | `port` | `9060` | Listen port |
 | `proto` | `"udp"` | Transport protocol — see table below |
 
+> **Privileged ports:** a `port` below 1024 (for example `514`) can only be bound with `CAP_NET_BIND_SERVICE`. When heplify runs from the deb/rpm package (systemd service, unprivileged `heplify` user), this capability is not granted by default and heplify fails with `bind: permission denied`. Use a port of 1024 or above, or add a drop-in (`systemctl edit heplify`) with `AmbientCapabilities=CAP_NET_BIND_SERVICE` and `CapabilityBoundingSet=CAP_NET_BIND_SERVICE`. The same applies to the API and Prometheus listeners.
+
 ### Supported protocols
 
 | Value | Description |
