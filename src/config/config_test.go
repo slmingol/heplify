@@ -51,13 +51,13 @@ func TestValidateERSPANNoPort(t *testing.T) {
 	cfg := &Config{}
 	cfg.TransportSettings = []TransportSettings{
 		{
-			Name:           "erspan-out",
-			Active:         true,
-			Host:           "10.0.0.1",
-			Transport:      "erspan",
-			ERSPANVersion:  2,
+			Name:            "erspan-out",
+			Active:          true,
+			Host:            "10.0.0.1",
+			Transport:       "erspan",
+			ERSPANVersion:   2,
 			ERSPANSessionID: 1,
-			ERSPANSrcIP:   "192.168.1.10",
+			ERSPANSrcIP:     "192.168.1.10",
 			// Port intentionally 0 — ERSPAN needs no port
 		},
 	}
